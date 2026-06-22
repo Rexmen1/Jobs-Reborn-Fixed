@@ -226,46 +226,78 @@ public class JobsPlayer {
      * @param amount amount of points
      * @return true if it is under
      */
-    public boolean isUnderLimit(CurrencyType type, double amount) {
-        if (amount == 0)
-            return true;
-
+    public boolean isReachedLimit(CurrencyType type, boolean notify) {
         Player player = getPlayer();
         if (player == null)
-            return true;
+            return false;
 
         CurrencyLimit limit = Jobs.getGCManager().getLimit(type);
         if (!limit.isEnabled())
-            return true;
+            return false;
 
         PaymentData data = getPaymentLimit();
 
         if (data.isReachedLimit(type, getLimit(type))) {
-            String name = type.getName().toLowerCase();
+            if (notify) {
+                String name = type.getName().toLowerCase();
 
-            if (!data.isInformed() && player.isOnline() && !data.isReseted(type)) {
-                if (Jobs.getGCManager().useMaxPaymentCurve) {
-                    player.sendMessage(Jobs.getLanguage().getMessage("command.limit.output.reached" + name + "limit"));
-                    player.sendMessage(Jobs.getLanguage().getMessage("command.limit.output.reached" + name + "limit2"));
-                    player.sendMessage(Jobs.getLanguage().getMessage("command.limit.output.reached" + name + "limit3"));
-                } else {
-                    player.sendMessage(Jobs.getLanguage().getMessage("command.limit.output.reached" + name + "limit"));
-                    player.sendMessage(Jobs.getLanguage().getMessage("command.limit.output.reached" + name + "limit2"));
+                if (!data.isInformed() && player.isOnline() && !data.isReseted(type)) {
+                    if (type == CurrencyType.MONEY && Jobs.getGCManager().useMaxPaymentCurve) {
+                        double currentAmount = data.getAmount(type);
+                        double baseLimit = getLimit(type);
+                        double factor = Jobs.getGCManager().maxPaymentCurveFactor * 1000.0;
+                        int stage = Jobs.getLimitStage(currentAmount, baseLimit, factor);
+                        double r = 1.0 - (factor / 100.0);
+                        if (stage == Integer.MAX_VALUE) {
+                            String absoluteLimitFormatted = new java.text.DecimalFormat("##.##").format(baseLimit / (1.0 - r));
+                            player.sendMessage(Jobs.getLanguage().getMessage("command.limit.output.reachedmoneyabsolute",
+                                "[limit]", absoluteLimitFormatted,
+                                "%limit%", absoluteLimitFormatted));
+                            player.sendMessage(Jobs.getLanguage().getMessage("command.limit.output.reached" + name + "limit2"));
+                        } else {
+                            String newCapacityFormatted = new java.text.DecimalFormat("##.##").format(baseLimit * Math.pow(r, stage));
+                            String reductionFormatted = new java.text.DecimalFormat("##.##").format(factor) + "%";
+
+                            player.sendMessage(Jobs.getLanguage().getMessage("command.limit.output.reached" + name + "limit"));
+                            player.sendMessage(Jobs.getLanguage().getMessage("command.limit.output.reached" + name + "limit2"));
+                            player.sendMessage(Jobs.getLanguage().getMessage("command.limit.output.reached" + name + "limit3",
+                                "[reduction]", reductionFormatted,
+                                "%reduction%", reductionFormatted,
+                                "[limit]", newCapacityFormatted,
+                                "%limit%", newCapacityFormatted,
+                                "[stage]", String.valueOf(stage),
+                                "%stage%", String.valueOf(stage)));
+                        }
+                    } else {
+                        player.sendMessage(Jobs.getLanguage().getMessage("command.limit.output.reached" + name + "limit"));
+                        player.sendMessage(Jobs.getLanguage().getMessage("command.limit.output.reached" + name + "limit2"));
+                    }
+
+                    data.setInformed(true);
                 }
 
-                data.setInformed(true);
+                if (data.isAnnounceTime(limit.getAnnouncementDelay()) && player.isOnline())
+                    CMIActionBar.send(player, Jobs.getLanguage().getMessage("command.limit.output." + name + "time", "%time%", CMITimeManager.to24hourShort(data.getLeftTime(type))));
+
+                if (data.isReseted(type))
+                    data.setReseted(type, false);
             }
 
-            if (data.isAnnounceTime(limit.getAnnouncementDelay()) && player.isOnline())
-                CMIActionBar.send(player, Jobs.getLanguage().getMessage("command.limit.output." + name + "time", "%time%", CMITimeManager.to24hourShort(data.getLeftTime(type))));
+            return true;
+        }
 
-            if (data.isReseted(type))
-                data.setReseted(type, false);
+        return false;
+    }
 
+    public boolean isUnderLimit(CurrencyType type, double amount) {
+        if (amount == 0)
+            return true;
+
+        if (isReachedLimit(type, true)) {
             return false;
         }
 
-        data.addAmount(type, amount);
+        getPaymentLimit().addAmount(type, amount);
         return true;
     }
 

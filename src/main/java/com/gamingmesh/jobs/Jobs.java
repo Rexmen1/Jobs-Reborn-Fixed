@@ -192,7 +192,8 @@ public final class Jobs extends JavaPlugin {
     public static boolean fullyLoaded = false;
 
     private static final int MAX_ENTRIES = 20;
-    public static final LinkedHashMap<UUID, FastPayment> FASTPAYMENT = new LinkedHashMap<UUID, FastPayment>(MAX_ENTRIES + 1, .75F, false) {
+    public static final LinkedHashMap<UUID, FastPayment> FASTPAYMENT = new LinkedHashMap<UUID, FastPayment>(
+            MAX_ENTRIES + 1, .75F, false) {
         protected boolean removeEldestEntry(Map.Entry<UUID, FastPayment> eldest) {
             return size() > MAX_ENTRIES;
         }
@@ -289,7 +290,8 @@ public final class Jobs extends JavaPlugin {
             return false;
 
         try {
-            if (Integer.parseInt(papi.getDescription().getVersion().replaceAll("[^\\d]", "")) >= 2100 && new PlaceholderAPIHook(this).register()) {
+            if (Integer.parseInt(papi.getDescription().getVersion().replaceAll("[^\\d]", "")) >= 2100
+                    && new PlaceholderAPIHook(this).register()) {
                 CMIMessages.consoleMessage("&6PlaceholderAPI &ehooked.");
             }
         } catch (NumberFormatException ex) {
@@ -607,13 +609,15 @@ public final class Jobs extends JavaPlugin {
         for (Iterator<PlayerInfo> it = temp.values().iterator(); it.hasNext();) {
             PlayerInfo one = it.next();
             int id = one.getID();
-            JobsPlayer jPlayer = getPlayerManager().getJobsPlayerOffline(one, playersJobs.get(id), playersPoints.get(id), playersLogs.get(id), playersArchives.get(id), playersLimits.get(id));
+            JobsPlayer jPlayer = getPlayerManager().getJobsPlayerOffline(one, playersJobs.get(id),
+                    playersPoints.get(id), playersLogs.get(id), playersArchives.get(id), playersLimits.get(id));
             if (jPlayer != null)
                 getPlayerManager().addPlayerToCache(jPlayer);
         }
         if (!getPlayerManager().getPlayersCache().isEmpty())
             CMIMessages.consoleMessage(
-                    "&ePreloaded &6" + getPlayerManager().getPlayersCache().size() + " &eplayers data in &6" + ((int) ((System.currentTimeMillis() - time) / 1000.0D * 100.0D) / 100.0D));
+                    "&ePreloaded &6" + getPlayerManager().getPlayersCache().size() + " &eplayers data in &6"
+                            + ((int) ((System.currentTimeMillis() - time) / 1000.0D * 100.0D) / 100.0D));
     }
 
     public static void convertDatabase() {
@@ -640,8 +644,8 @@ public final class Jobs extends JavaPlugin {
 
             if (Jobs.getGeneralConfigManager().ExploreSaveIntoDatabase)
                 dao.saveExplore();
-//    Do we really need to convert Block protection?
-//    Jobs.getJobsDAO().saveBlockProtection();
+            // Do we really need to convert Block protection?
+            // Jobs.getJobsDAO().saveBlockProtection();
         } catch (SQLException e) {
             e.printStackTrace();
             CMIMessages.consoleMessage("&cCan't write data to data base, please send error log to dev's.");
@@ -808,7 +812,8 @@ public final class Jobs extends JavaPlugin {
             startup();
 
             if (status.equals(LoadStatus.MYSQLFailure) || status.equals(LoadStatus.SQLITEFailure)) {
-                CMIMessages.consoleMessage("&cCould not connect to " + (status.equals(LoadStatus.MYSQLFailure) ? "MySQL" : "SqLite") + "!");
+                CMIMessages.consoleMessage("&cCould not connect to "
+                        + (status.equals(LoadStatus.MYSQLFailure) ? "MySQL" : "SqLite") + "!");
                 CMIMessages.consoleMessage("&cPlugin will be disabled");
                 this.onDisable();
                 this.setEnabled(false);
@@ -826,7 +831,8 @@ public final class Jobs extends JavaPlugin {
 
             if (HookVault.isVaultEnable()) {
                 // register economy
-                CMIScheduler.runTask(Jobs.getInstance(), () -> new HookEconomyTask(net.milkbowl.vault.economy.Economy.class));
+                CMIScheduler.runTask(Jobs.getInstance(),
+                        () -> new HookEconomyTask(net.milkbowl.vault.economy.Economy.class));
 
                 // register permission from vault
                 CMIScheduler.runTask(Jobs.getInstance(), () -> new HookPermissionTask(Permission.class));
@@ -841,7 +847,8 @@ public final class Jobs extends JavaPlugin {
             CMIMessages.consoleMessage("&ePlugin has been enabled successfully.");
         } catch (Throwable e) {
             e.printStackTrace();
-            System.out.println("There was some issues when starting plugin. Please contact dev about this. Plugin will be disabled.");
+            System.out.println(
+                    "There was some issues when starting plugin. Please contact dev about this. Plugin will be disabled.");
             setEnabled(false);
         }
         fullyLoaded = true;
@@ -1115,7 +1122,8 @@ public final class Jobs extends JavaPlugin {
         List<JobProgression> progression = jPlayer.getJobProgression();
         int numjobs = progression.size();
 
-        if (!Jobs.getGCManager().useBlockProtectionBlockTracker && !Jobs.getExploitManager().isProtectionValidAddIfNotExists(jPlayer, info, block, true))
+        if (!Jobs.getGCManager().useBlockProtectionBlockTracker
+                && !Jobs.getExploitManager().isProtectionValidAddIfNotExists(jPlayer, info, block, true))
             return;
 
         // no job
@@ -1138,7 +1146,8 @@ public final class Jobs extends JavaPlugin {
 
             Boost boost = getPlayerManager().getFinalBonus(jPlayer, noneJob);
 
-            JobsPrePaymentEvent jobsPrePaymentEvent = new JobsPrePaymentEvent(jPlayer.getPlayer(), noneJob, income, 0, pointAmount, block, ent, victim, info);
+            JobsPrePaymentEvent jobsPrePaymentEvent = new JobsPrePaymentEvent(jPlayer.getPlayer(), noneJob, income, 0,
+                    pointAmount, block, ent, victim, info);
             Bukkit.getServer().getPluginManager().callEvent(jobsPrePaymentEvent);
             // If event is canceled, don't do anything
             if (jobsPrePaymentEvent.isCancelled()) {
@@ -1173,22 +1182,37 @@ public final class Jobs extends JavaPlugin {
                 }
             }
 
-            if (!jPlayer.isUnderLimit(CurrencyType.MONEY, income)) {
-                if (gConfigManager.useMaxPaymentCurve) {
-                    double percentOver = jPlayer.percentOverLimit(CurrencyType.MONEY);
-                    double percentLoss = 100 / ((1 / gConfigManager.maxPaymentCurveFactor * percentOver * percentOver) + 1);
+            boolean moneyLimitReached = jPlayer.isReachedLimit(CurrencyType.MONEY, true);
+            boolean pointLimitReached = jPlayer.isReachedLimit(CurrencyType.POINTS, true);
 
-                    income = income - (income * percentLoss / 100);
+            if (moneyLimitReached) {
+                if (gConfigManager.useMaxPaymentCurve) {
+                    double currentAmount = jPlayer.getPaymentLimit().getAmount(CurrencyType.MONEY);
+                    double baseLimit = jPlayer.getLimit(CurrencyType.MONEY);
+                    double multiplier = getPaymentMultiplier(currentAmount, baseLimit, gConfigManager.maxPaymentCurveFactor);
+                    income = income * multiplier;
                 } else
                     income = 0D;
                 if (gConfigManager.getLimit(CurrencyType.MONEY).getStopWith().contains(CurrencyType.POINTS))
                     pointAmount = 0D;
             }
 
-            if (!jPlayer.isUnderLimit(CurrencyType.POINTS, pointAmount)) {
+            if (pointLimitReached) {
                 pointAmount = 0D;
                 if (gConfigManager.getLimit(CurrencyType.POINTS).getStopWith().contains(CurrencyType.MONEY))
                     income = 0D;
+            }
+
+            if (income != 0D) {
+                if (!moneyLimitReached || gConfigManager.useMaxPaymentCurve) {
+                    addMoneyLimitAmount(jPlayer, income, gConfigManager.maxPaymentCurveFactor);
+                }
+            }
+
+            if (pointAmount != 0D) {
+                if (!pointLimitReached) {
+                    jPlayer.getPaymentLimit().addAmount(CurrencyType.POINTS, pointAmount);
+                }
             }
 
             if (income == 0D && pointAmount == 0D)
@@ -1212,7 +1236,8 @@ public final class Jobs extends JavaPlugin {
                 payments.put(CurrencyType.POINTS, pointAmount);
 
             // FinalPayment event
-            CMIScheduler.runTaskAsynchronously(getInstance(), () -> Bukkit.getServer().getPluginManager().callEvent(new JobsInstancePaymentEvent(jPlayer.getPlayer(), payments)));
+            CMIScheduler.runTaskAsynchronously(getInstance(), () -> Bukkit.getServer().getPluginManager()
+                    .callEvent(new JobsInstancePaymentEvent(jPlayer.getPlayer(), payments)));
             payOut(jPlayer, payments);
 
             if (gConfigManager.LoggingUse) {
@@ -1235,7 +1260,8 @@ public final class Jobs extends JavaPlugin {
 
                 checkDailyQuests(jPlayer, prog.getJob(), info);
 
-                if (jobinfo == null || (gConfigManager.disablePaymentIfMaxLevelReached && prog.getLevel() >= prog.getJob().getMaxLevel())) {
+                if (jobinfo == null || (gConfigManager.disablePaymentIfMaxLevelReached
+                        && prog.getLevel() >= prog.getJob().getMaxLevel())) {
                     continue;
                 }
 
@@ -1275,7 +1301,8 @@ public final class Jobs extends JavaPlugin {
 
                 Boost boost = getPlayerManager().getFinalBonus(jPlayer, prog.getJob(), ent, victim);
 
-                JobsPrePaymentEvent jobsPrePaymentEvent = new JobsPrePaymentEvent(jPlayer.getPlayer(), prog.getJob(), CurrencyType.generate(income, expAmount, pointAmount), block, ent, victim, info);
+                JobsPrePaymentEvent jobsPrePaymentEvent = new JobsPrePaymentEvent(jPlayer.getPlayer(), prog.getJob(),
+                        CurrencyType.generate(income, expAmount, pointAmount), block, ent, victim, info);
 
                 Bukkit.getServer().getPluginManager().callEvent(jobsPrePaymentEvent);
                 // If event is canceled, don't do anything
@@ -1325,8 +1352,18 @@ public final class Jobs extends JavaPlugin {
                     }
                 }
 
-                if (!jPlayer.isUnderLimit(CurrencyType.MONEY, income)) {
-                    income = 0D;
+                boolean moneyLimitReached = jPlayer.isReachedLimit(CurrencyType.MONEY, true);
+                boolean expLimitReached = jPlayer.isReachedLimit(CurrencyType.EXP, true);
+                boolean pointLimitReached = jPlayer.isReachedLimit(CurrencyType.POINTS, true);
+
+                if (moneyLimitReached) {
+                    if (gConfigManager.useMaxPaymentCurve) {
+                        double currentAmount = jPlayer.getPaymentLimit().getAmount(CurrencyType.MONEY);
+                        double baseLimit = jPlayer.getLimit(CurrencyType.MONEY);
+                        double multiplier = getPaymentMultiplier(currentAmount, baseLimit, gConfigManager.maxPaymentCurveFactor);
+                        income = income * multiplier;
+                    } else
+                        income = 0D;
 
                     CurrencyLimit cLimit = gConfigManager.getLimit(CurrencyType.MONEY);
 
@@ -1337,7 +1374,7 @@ public final class Jobs extends JavaPlugin {
                         pointAmount = 0D;
                 }
 
-                if (!jPlayer.isUnderLimit(CurrencyType.EXP, expAmount)) {
+                if (expLimitReached) {
                     expAmount = 0D;
 
                     CurrencyLimit cLimit = gConfigManager.getLimit(CurrencyType.EXP);
@@ -1349,7 +1386,7 @@ public final class Jobs extends JavaPlugin {
                         pointAmount = 0D;
                 }
 
-                if (!jPlayer.isUnderLimit(CurrencyType.POINTS, pointAmount)) {
+                if (pointLimitReached) {
                     pointAmount = 0D;
 
                     CurrencyLimit cLimit = gConfigManager.getLimit(CurrencyType.POINTS);
@@ -1361,11 +1398,30 @@ public final class Jobs extends JavaPlugin {
                         expAmount = 0D;
                 }
 
+                if (income != 0D) {
+                    if (!moneyLimitReached || gConfigManager.useMaxPaymentCurve) {
+                        addMoneyLimitAmount(jPlayer, income, gConfigManager.maxPaymentCurveFactor);
+                    }
+                }
+
+                if (expAmount != 0D) {
+                    if (!expLimitReached) {
+                        jPlayer.getPaymentLimit().addAmount(CurrencyType.EXP, expAmount);
+                    }
+                }
+
+                if (pointAmount != 0D) {
+                    if (!pointLimitReached) {
+                        jPlayer.getPaymentLimit().addAmount(CurrencyType.POINTS, pointAmount);
+                    }
+                }
+
                 if (income == 0D && pointAmount == 0D && expAmount == 0D)
                     continue;
 
                 // JobsPayment event
-                JobsExpGainEvent jobsExpGainEvent = new JobsExpGainEvent(jPlayer.getPlayer(), prog.getJob(), expAmount, block, ent, victim, info);
+                JobsExpGainEvent jobsExpGainEvent = new JobsExpGainEvent(jPlayer.getPlayer(), prog.getJob(), expAmount,
+                        block, ent, victim, info);
                 Bukkit.getServer().getPluginManager().callEvent(jobsExpGainEvent);
                 // If event is canceled, don't do anything
                 expAmount = jobsExpGainEvent.isCancelled() ? 0D : jobsExpGainEvent.getExp();
@@ -1378,10 +1434,12 @@ public final class Jobs extends JavaPlugin {
                 if (expAmount != 0D)
                     payments.put(CurrencyType.EXP, expAmount);
 
-                FASTPAYMENT.put(jPlayer.getUniqueId(), new FastPayment(jPlayer, info, new BufferedPayment(jPlayer.getPlayer(), payments), prog.getJob()));
+                FASTPAYMENT.put(jPlayer.getUniqueId(), new FastPayment(jPlayer, info,
+                        new BufferedPayment(jPlayer.getPlayer(), payments), prog.getJob()));
 
                 // FinalPayment event
-                CMIScheduler.runTaskAsynchronously(getInstance(), () -> Bukkit.getServer().getPluginManager().callEvent(new JobsInstancePaymentEvent(jPlayer.getPlayer(), payments)));
+                CMIScheduler.runTaskAsynchronously(getInstance(), () -> Bukkit.getServer().getPluginManager()
+                        .callEvent(new JobsInstancePaymentEvent(jPlayer.getPlayer(), payments)));
 
                 payOut(jPlayer, payments);
 
@@ -1454,14 +1512,16 @@ public final class Jobs extends JavaPlugin {
             return 9 * level - 158;
     }
 
-    public static void perform(JobsPlayer jPlayer, ActionInfo info, BufferedPayment payment, Job job, Block block, Entity ent, LivingEntity victim) {
+    public static void perform(JobsPlayer jPlayer, ActionInfo info, BufferedPayment payment, Job job, Block block,
+            Entity ent, LivingEntity victim) {
 
         // Need to clone
         payment = new BufferedPayment(jPlayer.getPlayer(), payment.getPayment());
 
         double expPayment = payment.get(CurrencyType.EXP);
 
-        JobsPrePaymentEvent jobsPrePaymentEvent = new JobsPrePaymentEvent(jPlayer.getPlayer(), job, payment.getPayment(), block, ent, victim, info);
+        JobsPrePaymentEvent jobsPrePaymentEvent = new JobsPrePaymentEvent(jPlayer.getPlayer(), job,
+                payment.getPayment(), block, ent, victim, info);
         Bukkit.getServer().getPluginManager().callEvent(jobsPrePaymentEvent);
         // If event is canceled, don't do anything
         if (jobsPrePaymentEvent.isCancelled())
@@ -1470,7 +1530,8 @@ public final class Jobs extends JavaPlugin {
         payment.set(CurrencyType.MONEY, jobsPrePaymentEvent.getAmount());
         payment.set(CurrencyType.POINTS, jobsPrePaymentEvent.getPoints());
 
-        JobsExpGainEvent jobsExpGainEvent = new JobsExpGainEvent(payment.getOfflinePlayer(), job, expPayment, block, ent, victim, info);
+        JobsExpGainEvent jobsExpGainEvent = new JobsExpGainEvent(payment.getOfflinePlayer(), job, expPayment, block,
+                ent, victim, info);
         Bukkit.getServer().getPluginManager().callEvent(jobsExpGainEvent);
         // If event is canceled, don't do anything
         if (jobsExpGainEvent.isCancelled())
@@ -1480,16 +1541,80 @@ public final class Jobs extends JavaPlugin {
 
         payment.set(CurrencyType.EXP, jobsExpGainEvent.getExp());
 
-        boolean limited = true;
-        for (CurrencyType one : CurrencyType.values()) {
-            if (jPlayer.isUnderLimit(one, payment.get(one))) {
-                limited = false;
-                break;
+        double income = payment.get(CurrencyType.MONEY);
+        double expAmount = payment.get(CurrencyType.EXP);
+        double pointAmount = payment.get(CurrencyType.POINTS);
+
+        boolean moneyLimitReached = jPlayer.isReachedLimit(CurrencyType.MONEY, true);
+        boolean expLimitReached = jPlayer.isReachedLimit(CurrencyType.EXP, true);
+        boolean pointLimitReached = jPlayer.isReachedLimit(CurrencyType.POINTS, true);
+
+        if (moneyLimitReached) {
+            if (gConfigManager.useMaxPaymentCurve) {
+                double currentAmount = jPlayer.getPaymentLimit().getAmount(CurrencyType.MONEY);
+                double baseLimit = jPlayer.getLimit(CurrencyType.MONEY);
+                double multiplier = getPaymentMultiplier(currentAmount, baseLimit, gConfigManager.maxPaymentCurveFactor);
+                income = income * multiplier;
+            } else
+                income = 0D;
+
+            CurrencyLimit cLimit = gConfigManager.getLimit(CurrencyType.MONEY);
+
+            if (cLimit.getStopWith().contains(CurrencyType.EXP))
+                expAmount = 0D;
+
+            if (cLimit.getStopWith().contains(CurrencyType.POINTS))
+                pointAmount = 0D;
+        }
+
+        if (expLimitReached) {
+            expAmount = 0D;
+
+            CurrencyLimit cLimit = gConfigManager.getLimit(CurrencyType.EXP);
+
+            if (cLimit.getStopWith().contains(CurrencyType.MONEY))
+                income = 0D;
+
+            if (cLimit.getStopWith().contains(CurrencyType.POINTS))
+                pointAmount = 0D;
+        }
+
+        if (pointLimitReached) {
+            pointAmount = 0D;
+
+            CurrencyLimit cLimit = gConfigManager.getLimit(CurrencyType.POINTS);
+
+            if (cLimit.getStopWith().contains(CurrencyType.MONEY))
+                income = 0D;
+
+            if (cLimit.getStopWith().contains(CurrencyType.EXP))
+                expAmount = 0D;
+        }
+
+        if (income == 0D && pointAmount == 0D && expAmount == 0D)
+            return;
+
+        payment.set(CurrencyType.MONEY, income);
+        payment.set(CurrencyType.EXP, expAmount);
+        payment.set(CurrencyType.POINTS, pointAmount);
+
+        if (income != 0D) {
+            if (!moneyLimitReached || gConfigManager.useMaxPaymentCurve) {
+                addMoneyLimitAmount(jPlayer, income, gConfigManager.maxPaymentCurveFactor);
             }
         }
 
-        if (limited)
-            return;
+        if (expAmount != 0D) {
+            if (!expLimitReached) {
+                jPlayer.getPaymentLimit().addAmount(CurrencyType.EXP, expAmount);
+            }
+        }
+
+        if (pointAmount != 0D) {
+            if (!pointLimitReached) {
+                jPlayer.getPaymentLimit().addAmount(CurrencyType.POINTS, pointAmount);
+            }
+        }
 
         payOut(jPlayer, payment);
 
@@ -1533,6 +1658,66 @@ public final class Jobs extends JavaPlugin {
         new RawMessage().addText(LC.info_NoPermission.getLocale()).addHover("&2" + perm).show((Player) sender);
         return false;
 
+    }
+
+    public static double getPaymentMultiplier(double currentAmount, double baseLimit, float maxPaymentCurveFactor) {
+        double factor = maxPaymentCurveFactor * 1000.0;
+        double r = 1.0 - (factor / 100.0);
+        if (r >= 1.0) {
+            return 1.0;
+        }
+        if (r <= 0.0) {
+            return currentAmount >= baseLimit ? 0.0 : 1.0;
+        }
+        double maxPossible = baseLimit / (1.0 - r);
+        return currentAmount >= maxPossible ? 0.0 : 1.0;
+    }
+
+    public static int getLimitStage(double currentAmount, double baseLimit, double factor) {
+        if (currentAmount < baseLimit) {
+            return 0;
+        }
+        double r = 1.0 - (factor / 100.0);
+        if (r >= 1.0) {
+            return 0;
+        }
+        if (r <= 0.0) {
+            return Integer.MAX_VALUE;
+        }
+        double maxPossible = baseLimit / (1.0 - r);
+        if (currentAmount >= maxPossible) {
+            return Integer.MAX_VALUE;
+        }
+        double val = 1.0 - (currentAmount * (1.0 - r) / baseLimit);
+        if (val <= 0.0) {
+            return Integer.MAX_VALUE;
+        }
+        double stageFloat = Math.log(val) / Math.log(r) - 1.0;
+        int stage = (int) Math.ceil(stageFloat - 1e-9);
+        return Math.max(0, stage);
+    }
+
+    public static double getCumulativeLimitBefore(int stage, double baseLimit, double factor) {
+        if (stage <= 0) {
+            return 0.0;
+        }
+        double r = 1.0 - (factor / 100.0);
+        if (r >= 1.0) {
+            return baseLimit * stage;
+        }
+        return baseLimit * (1.0 - Math.pow(r, stage)) / (1.0 - r);
+    }
+
+    public static void addMoneyLimitAmount(JobsPlayer jPlayer, double income, float maxPaymentCurveFactor) {
+        PaymentData limitTracker = jPlayer.getPaymentLimit();
+        double before = limitTracker.getAmount(CurrencyType.MONEY);
+        limitTracker.addAmount(CurrencyType.MONEY, income);
+        double after = limitTracker.getAmount(CurrencyType.MONEY);
+        double baseLimit = jPlayer.getLimit(CurrencyType.MONEY);
+        double factor = maxPaymentCurveFactor * 1000.0;
+        if (getLimitStage(before, baseLimit, factor) < getLimitStage(after, baseLimit, factor)) {
+            limitTracker.setInformed(false);
+        }
     }
 
     public static boolean hasLimitedItems() {

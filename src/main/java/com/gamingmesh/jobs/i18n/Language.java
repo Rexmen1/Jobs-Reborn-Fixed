@@ -178,7 +178,18 @@ public class Language {
             for (int i = 0; i < ls.size(); i++) {
                 String msg = ls.get(i);
                 for (int y = 0; y < variables.length; y += 2) {
-                    msg = msg.replace(String.valueOf(variables[y]), String.valueOf(variables[y + 1]));
+                    if (y + 1 >= variables.length)
+                        break;
+                    String replaceKey = String.valueOf(variables[y]);
+                    String replaceValue = String.valueOf(variables[y + 1]);
+                    msg = msg.replace(replaceKey, replaceValue);
+                    if (replaceKey.startsWith("[") && replaceKey.endsWith("]")) {
+                        String altKey = "%" + replaceKey.substring(1, replaceKey.length() - 1) + "%";
+                        msg = msg.replace(altKey, replaceValue);
+                    } else if (replaceKey.startsWith("%") && replaceKey.endsWith("%")) {
+                        String altKey = "[" + replaceKey.substring(1, replaceKey.length() - 1) + "]";
+                        msg = msg.replace(altKey, replaceValue);
+                    }
                 }
 
                 ls.set(i, CMIChatColor.translate(filterNewLine(msg)));

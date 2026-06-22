@@ -776,10 +776,11 @@ public class PlayerManager {
 
             message = Language.updateJob(message, job);
 
-            message = message.replace("%playername%", jPlayer.getName());
-            message = message.replace("%playerdisplayname%", jPlayer.getDisplayName());
-            message = message.replace("%joblevel%", prog.getLevelFormatted());
-            message = message.replace("%lostLevel%", Integer.toString(oldLevel));
+            message = message.replace("%playername%", jPlayer.getName()).replace("[playername]", jPlayer.getName());
+            message = message.replace("%playerdisplayname%", jPlayer.getDisplayName()).replace("[playerdisplayname]", jPlayer.getDisplayName());
+            message = message.replace("%joblevel%", prog.getLevelFormatted()).replace("[joblevel]", prog.getLevelFormatted());
+            String lostLevels = Integer.toString(oldLevel - prog.getLevel());
+            message = message.replace("%lostLevel%", lostLevels).replace("[lostLevel]", lostLevels);
 
             if (player != null && (Jobs.getGCManager().LevelChangeActionBar || Jobs.getGCManager().LevelChangeChat)) {
                 for (String line : message.split("\n")) {
@@ -873,13 +874,14 @@ public class PlayerManager {
 
         message = Language.updateJob(message, job);
 
-        if (levelUpEvent.getOldTitle() != null)
-            message = message.replace("%titlename%", levelUpEvent.getOldTitle()
-                    .getChatColor().toString() + levelUpEvent.getOldTitle().getName());
+        if (levelUpEvent.getOldTitle() != null) {
+            String titleStr = levelUpEvent.getOldTitle().getChatColor().toString() + levelUpEvent.getOldTitle().getName();
+            message = message.replace("%titlename%", titleStr).replace("[titlename]", titleStr);
+        }
 
-        message = message.replace("%playername%", jPlayer.getName());
-        message = message.replace("%playerdisplayname%", jPlayer.getDisplayName());
-        message = message.replace("%joblevel%", prog.getLevelFormatted());
+        message = message.replace("%playername%", jPlayer.getName()).replace("[playername]", jPlayer.getName());
+        message = message.replace("%playerdisplayname%", jPlayer.getDisplayName()).replace("[playerdisplayname]", jPlayer.getDisplayName());
+        message = message.replace("%joblevel%", prog.getLevelFormatted()).replace("[joblevel]", prog.getLevelFormatted());
 
         if (Jobs.getGCManager().isBroadcastingLevelups() || Jobs.getGCManager().LevelChangeActionBar || Jobs.getGCManager().LevelChangeChat) {
             for (String line : message.split("\n")) {
@@ -910,10 +912,10 @@ public class PlayerManager {
                     ? "broadcast"
                     : "nobroadcast"));
 
-            message = message.replace("%playername%", jPlayer.getName());
-            message = message.replace("%playerdisplayname%", jPlayer.getDisplayName());
-            message = message.replace("%titlename%", levelUpEvent.getNewTitle()
-                    .getChatColor().toString() + levelUpEvent.getNewTitle().getName());
+            String titleStr = levelUpEvent.getNewTitle().getChatColor().toString() + levelUpEvent.getNewTitle().getName();
+            message = message.replace("%playername%", jPlayer.getName()).replace("[playername]", jPlayer.getName());
+            message = message.replace("%playerdisplayname%", jPlayer.getDisplayName()).replace("[playerdisplayname]", jPlayer.getDisplayName());
+            message = message.replace("%titlename%", titleStr).replace("[titlename]", titleStr);
 
             message = Language.updateJob(message, job);
 

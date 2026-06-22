@@ -64,9 +64,46 @@ public class limit implements Cmd {
                 String typeName = type.getName().toLowerCase();
 
                 Language.sendMessage(sender, "command.limit.output." + typeName + "time", "%time%", CMITimeManager.to24hourShort(limit.getLeftTime(type)));
-                Language.sendMessage(sender, "command.limit.output." + typeName + "Limit",
-                    "%current%", new DecimalFormat("##.##").format(limit.getAmount(type)),
-                    "%total%", JPlayer.getLimit(type));
+
+                if (type == CurrencyType.MONEY && Jobs.getGCManager().useMaxPaymentCurve) {
+                    double currentAmount = limit.getAmount(type);
+                    double baseLimit = JPlayer.getLimit(type);
+                    double factor = Jobs.getGCManager().maxPaymentCurveFactor * 1000.0;
+                    int stage = Jobs.getLimitStage(currentAmount, baseLimit, factor);
+                    double r = 1.0 - (factor / 100.0);
+                    if (stage == Integer.MAX_VALUE) {
+                        String absoluteLimit = new DecimalFormat("##.##").format(baseLimit / (1.0 - r));
+                        String currentFormatted = new DecimalFormat("##.##").format(currentAmount);
+                        Language.sendMessage(sender, "command.limit.output.moneyLimitCurveAbsolute",
+                            "[current]", currentFormatted,
+                            "%current%", currentFormatted,
+                            "[total]", absoluteLimit,
+                            "%total%", absoluteLimit);
+                    } else {
+                        double stageLimit = baseLimit * Math.pow(r, stage);
+                        double cumulativeBefore = Jobs.getCumulativeLimitBefore(stage, baseLimit, factor);
+                        double stageProgress = currentAmount - cumulativeBefore;
+                        
+                        String progressFormatted = new DecimalFormat("##.##").format(stageProgress);
+                        String totalFormatted = new DecimalFormat("##.##").format(stageLimit);
+                        String originalFormatted = new DecimalFormat("##.##").format(baseLimit);
+                        String stageStr = String.valueOf(stage);
+
+                        Language.sendMessage(sender, "command.limit.output.moneyLimitCurve",
+                            "[current]", progressFormatted,
+                            "%current%", progressFormatted,
+                            "[total]", totalFormatted,
+                            "%total%", totalFormatted,
+                            "[original]", originalFormatted,
+                            "%original%", originalFormatted,
+                            "[stage]", stageStr,
+                            "%stage%", stageStr);
+                    }
+                } else {
+                    Language.sendMessage(sender, "command.limit.output." + typeName + "Limit",
+                        "%current%", new DecimalFormat("##.##").format(limit.getAmount(type)),
+                        "%total%", JPlayer.getLimit(type));
+                }
             }
         }
         return true;
